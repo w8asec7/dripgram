@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "DripGram",
+    "slug": "thread-wardrobe",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "thread",
+    "userInterfaceStyle": "dark",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.thread.wardrobe",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Photograph a garment to add it to your private wardrobe.",
+        "NSPhotoLibraryUsageDescription": "Choose a garment photo for your private wardrobe."
+      }
+    },
+    "android": {
+      "package": "app.thread.wardrobe",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0B0D0C"
+      }
+    },
+    "web": {
+      "output": "single",
+      "favicon": "./assets/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "asyncRoutes": {
+            "web": false
+          }
+        }
+      ],
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Choose garment photos for your wardrobe.",
+          "cameraPermission": "Photograph a garment for your wardrobe.",
+          "microphonePermission": false
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Photograph garments for your wardrobe.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-notifications",
+      "expo-asset",
+      "expo-audio"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}

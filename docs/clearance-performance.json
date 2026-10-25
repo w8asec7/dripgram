@@ -1,0 +1,10 @@
+{
+  "source": "controlled synthetic provider latency; not a live before/after benchmark",
+  "providerDelaysMs": [30, 140, 220],
+  "beforeFirstBatchMs": 226,
+  "afterFirstBatchMs": 40,
+  "beforeSearchesRequired": 3,
+  "afterSearchesRequired": 1,
+  "verifiedSaleResults": 1,
+  "liveCalls": 0
+}

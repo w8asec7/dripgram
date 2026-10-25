@@ -1,0 +1,17 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": [
+    "./**/*.ts",
+    "../shared/**/*.ts",
+    "../src/models/**/*.ts",
+    "../src/services/ai/index.ts",
+    "../src/services/shopping/index.ts",
+    "../src/mocks/seed.ts"
+  ]
+}

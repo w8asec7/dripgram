@@ -1,0 +1,166 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function signedIn() { return request.auth != null; }
+  function owner(uid) { return signedIn() && request.auth.uid == uid; }
+  function pair(a,b) { return a < b ? a + '_' + b : b + '_' + a; }
+  function friends(a,b) { return exists(/databases/$(database)/documents/friendships/$(pair(a,b))); }
+  function member(occasionId) { return signedIn() && request.auth.uid in get(/databases/$(database)/documents/occasions/$(occasionId)).data.participantIds; }
+  function groupMember(gid) { return signedIn() && exists(/databases/$(database)/documents/styleGroups/$(gid)) && request.auth.uid in get(/databases/$(database)/documents/styleGroups/$(gid)).data.memberIds; }
+  function readLook(data) { return signedIn() && (data.ownerId == request.auth.uid || (request.auth.uid in data.audienceIds && ((data.groupId == null && friends(data.ownerId, request.auth.uid)) || (data.groupId != null && groupMember(data.groupId))))); }
+  function lookMember(lid) { return exists(/databases/$(database)/documents/sharedLooks/$(lid)) && readLook(get(/databases/$(database)/documents/sharedLooks/$(lid)).data); }
+  function validPiece(pieces, i) { return pieces.size() <= i || exists(/databases/$(database)/documents/users/$(request.auth.uid)/garments/$(pieces[i].id)); }
+  function matchesChatPiece(piece) {
+   let garment = get(/databases/$(database)/documents/users/$(request.auth.uid)/garments/$(piece.id)).data;
+   return piece.keys().hasOnly(['id','name','category','primaryColor','image']) &&
+    piece.name == garment.name && piece.category == garment.category &&
+    piece.primaryColor == garment.primaryColor && piece.image == garment.image;
+  }
+  function chatPiece(pieces, i) { return pieces.size() <= i || matchesChatPiece(pieces[i]); }
+  function validMessage(mid, kind, cid) {
+   let m = request.resource.data;
+   return m.keys().hasOnly(['id','authorId','text','createdAt','sentAt','attachment','replyTo','post']) &&
+    m.id == mid && m.authorId == request.auth.uid && m.text is string && m.text.size() <= 2000 &&
+    m.createdAt is string && m.sentAt == request.time &&
+    (m.text.size() > 0 || m.attachment != null || m.get('post',null) != null) &&
+    (m.get('post',null) == null || (m.post.keys().hasOnly(['id','title']) && m.post.title is string && m.post.title.size() > 0 && m.post.title.size() <= 140 && postMember(m.post.id))) &&
+    (m.replyTo == null || (m.replyTo.keys().hasOnly(['id','preview']) && m.replyTo.id is string && m.replyTo.preview is string && m.replyTo.preview.size() <= 140 && exists(/databases/$(database)/documents/$(kind)/$(cid)/messages/$(m.replyTo.id)))) &&
+    (m.attachment == null || (m.attachment.keys().hasOnly(['title','outfitId','pieces']) && m.attachment.title is string && m.attachment.title.size() >= 2 && m.attachment.title.size() <= 90 &&
+     (m.attachment.outfitId == null || (m.attachment.outfitId is string && m.attachment.outfitId.size() <= 128)) &&
+     m.attachment.pieces.size() >= 1 && m.attachment.pieces.size() <= 8 &&
+     chatPiece(m.attachment.pieces,0) && chatPiece(m.attachment.pieces,1) && chatPiece(m.attachment.pieces,2) && chatPiece(m.attachment.pieces,3) &&
+     chatPiece(m.attachment.pieces,4) && chatPiece(m.attachment.pieces,5) && chatPiece(m.attachment.pieces,6) && chatPiece(m.attachment.pieces,7)));
+  }
+  function readPost(data) { return signedIn() && (data.visibility == 'public' || data.ownerId == request.auth.uid || (data.visibility == 'friends' && friends(data.ownerId,request.auth.uid))); }
+  function postMember(pid) { return exists(/databases/$(database)/documents/posts/$(pid)) && readPost(get(/databases/$(database)/documents/posts/$(pid)).data); }
+  function matchesPostPiece(piece) {
+   let garment = get(/databases/$(database)/documents/users/$(request.auth.uid)/garments/$(piece.id)).data;
+   return piece.keys().hasOnly(['id','name','category','primaryColor','pattern','fit','brand','description','subcategory','styleTags','image']) &&
+    piece.name == garment.name && piece.category == garment.category && piece.primaryColor == garment.primaryColor && piece.pattern == garment.pattern && piece.fit == garment.fit && piece.brand == garment.brand && piece.styleTags == garment.styleTags && piece.description == garment.get('description','') && piece.subcategory == garment.get('subcategory',null) &&
+    (piece.image == null || (garment.image != null && ((piece.image.source == 'bundled' && piece.image == garment.image) || (piece.image.uri == '' && piece.image.storagePath == garment.image.storagePath && piece.image.ownerId == request.auth.uid && piece.image.garmentId == piece.id && piece.image.storagePath == 'users/' + request.auth.uid + '/garments/' + piece.id + '/thumbnail.jpg'))));
+  }
+  function postPiece(pieces,i) { return pieces.size() <= i || matchesPostPiece(pieces[i]); }
+  function validPost(pid) {
+   let p=request.resource.data;
+   return p.keys().hasOnly(['id','ownerId','caption','visibility','image','pieces','outfitId','createdAt','updatedAt','sample','kind']) && p.get('kind','outfit') in ['outfit','clothing'] && p.id == pid && p.ownerId == request.auth.uid && p.sample == false && p.caption is string && p.caption.size() <= 1000 && p.visibility in ['public','friends'] && p.createdAt is string && p.updatedAt is string && (p.outfitId == null || p.outfitId is string) && p.pieces is list && p.pieces.size() <= 6 && (p.image != null) &&
+    (p.image == null || (p.image.keys().hasOnly(['uri','path','version']) && p.image.uri == '' && p.image.version.matches('^[A-Za-z0-9_-]{1,128}$') && p.image.path == 'users/' + request.auth.uid + '/posts/' + pid + '/' + p.image.version + '.jpg')) &&
+    postPiece(p.pieces,0) && postPiece(p.pieces,1) && postPiece(p.pieces,2) && postPiece(p.pieces,3) && postPiece(p.pieces,4) && postPiece(p.pieces,5);
+  }
+  match /posts/{pid} {
+   allow get: if signedIn() && (!exists(/databases/$(database)/documents/posts/$(pid)) || readPost(resource.data));
+   allow list: if readPost(resource.data);
+   allow create: if signedIn() && validPost(pid);
+   allow update: if signedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['caption','visibility','updatedAt']) && request.resource.data.caption is string && request.resource.data.caption.size() <= 1000 && request.resource.data.visibility in ['public','friends'];
+   allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+   match /likes/{uid} {
+    allow read: if postMember(pid);
+    allow create, update: if postMember(pid) && uid == request.auth.uid && request.resource.data.keys().hasOnly(['userId']) && request.resource.data.userId == uid;
+    allow delete: if postMember(pid) && uid == request.auth.uid;
+   }
+   match /comments/{cid} {
+    allow read: if postMember(pid);
+    allow create: if postMember(pid) && request.resource.data.keys().hasOnly(['id','authorId','text','createdAt']) && request.resource.data.id == cid && request.resource.data.authorId == request.auth.uid && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 500 && request.resource.data.createdAt is string;
+    allow update: if false;
+    allow delete: if signedIn() && (resource.data.authorId == request.auth.uid || get(/databases/$(database)/documents/posts/$(pid)).data.ownerId == request.auth.uid);
+   }
+  }
+  match /styleGroups/{gid} {
+   allow read: if signedIn() && request.auth.uid in resource.data.memberIds;
+   allow create: if signedIn() && request.resource.data.id == gid && request.resource.data.ownerId == request.auth.uid && request.auth.uid in request.resource.data.memberIds && request.resource.data.memberIds.size() <= 8 && request.resource.data.name is string && request.resource.data.name.size() >= 2 && request.resource.data.name.size() <= 60;
+   allow update: if signedIn() && request.resource.data.id == resource.data.id && request.resource.data.ownerId == resource.data.ownerId && ((resource.data.ownerId == request.auth.uid && request.auth.uid in request.resource.data.memberIds && request.resource.data.memberIds.size() <= 8) || (request.auth.uid in resource.data.memberIds && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberIds']) && request.resource.data.memberIds == resource.data.memberIds.removeAll([request.auth.uid])));
+   allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+  }
+  match /styleGroups/{gid}/messages/{mid} {
+   allow read: if groupMember(gid);
+   allow create: if groupMember(gid) && validMessage(mid, 'styleGroups', gid);
+   allow update, delete: if false;
+  }
+  match /occasions/{oid}/messages/{mid} {
+   allow read: if member(oid);
+   allow create: if member(oid) && validMessage(mid, 'occasions', oid);
+   allow update, delete: if false;
+  }
+  match /sharedLooks/{lid} {
+   allow read: if readLook(resource.data);
+   allow create: if signedIn() && request.resource.data.id == lid && request.resource.data.ownerId == request.auth.uid && request.auth.uid in request.resource.data.audienceIds && request.resource.data.audienceIds.size() <= 8 && request.resource.data.title is string && request.resource.data.title.size() >= 2 && request.resource.data.title.size() <= 90 && request.resource.data.pieces.size() >= 1 && request.resource.data.pieces.size() <= 8 && validPiece(request.resource.data.pieces,0) && validPiece(request.resource.data.pieces,1) && validPiece(request.resource.data.pieces,2) && validPiece(request.resource.data.pieces,3) && validPiece(request.resource.data.pieces,4) && validPiece(request.resource.data.pieces,5) && validPiece(request.resource.data.pieces,6) && validPiece(request.resource.data.pieces,7) && (request.resource.data.groupId == null || (groupMember(request.resource.data.groupId) && request.resource.data.audienceIds.hasOnly(get(/databases/$(database)/documents/styleGroups/$(request.resource.data.groupId)).data.memberIds))) && (request.resource.data.parentId == null || (lookMember(request.resource.data.parentId) && request.resource.data.audienceIds == get(/databases/$(database)/documents/sharedLooks/$(request.resource.data.parentId)).data.audienceIds && request.resource.data.groupId == get(/databases/$(database)/documents/sharedLooks/$(request.resource.data.parentId)).data.groupId));
+   allow update: if signedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['audienceIds']) && request.resource.data.audienceIds.hasOnly(resource.data.audienceIds) && request.auth.uid in request.resource.data.audienceIds;
+   allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+   match /reactions/{uid} {
+    allow read: if lookMember(lid);
+    allow create, update: if lookMember(lid) && uid == request.auth.uid && request.resource.data.userId == uid && request.resource.data.keys().hasOnly(['userId']);
+    allow delete: if lookMember(lid) && uid == request.auth.uid;
+   }
+   match /comments/{cid} {
+    allow read: if lookMember(lid);
+    allow create: if lookMember(lid) && request.resource.data.authorId == request.auth.uid && request.resource.data.id == cid && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 180;
+    allow update: if false;
+    allow delete: if lookMember(lid) && resource.data.authorId == request.auth.uid;
+   }
+  }
+  function feedbackPiece(uid, ids, i) { return ids.size() <= i || exists(/databases/$(database)/documents/users/$(uid)/garments/$(ids[i])); }
+  function validFeedback(uid, rid) {
+    let f=request.resource.data;
+    return f.keys().hasOnly(['id','ownerId','outfitId','garmentIds','occasionType','response','createdAt','updatedAt']) && f.id==rid && f.ownerId==uid && f.outfitId==rid && f.response in ['wore','did-not-wear'] && f.occasionType is string && f.createdAt is string && f.updatedAt is string && f.garmentIds is list && f.garmentIds.size()>0 && f.garmentIds.size()<=8 && f.garmentIds.toSet().size()==f.garmentIds.size() && feedbackPiece(uid,f.garmentIds,0) && feedbackPiece(uid,f.garmentIds,1) && feedbackPiece(uid,f.garmentIds,2) && feedbackPiece(uid,f.garmentIds,3) && feedbackPiece(uid,f.garmentIds,4) && feedbackPiece(uid,f.garmentIds,5) && feedbackPiece(uid,f.garmentIds,6) && feedbackPiece(uid,f.garmentIds,7);
+  }
+  match /users/{uid} {
+   allow read: if owner(uid);
+   allow create, update: if owner(uid) && request.resource.data.id == uid && request.resource.data.displayName is string && request.resource.data.displayName.size() > 0;
+   allow delete: if false;
+   match /outfitFeedback/{recordId} {
+    allow read, delete: if owner(uid);
+    allow create, update: if owner(uid) && validFeedback(uid,recordId);
+   }
+   match /{kind}/{recordId} {
+    allow read: if owner(uid) && kind in ['garments','essentials','outfits','wears','watches','searches','notifications','products','cart','savedPosts'];
+    allow create, update: if owner(uid) && kind in ['garments','essentials','outfits','wears','watches','searches','notifications','products','cart','savedPosts'] && request.resource.data.ownerId == uid && request.resource.data.id == recordId;
+    allow delete: if owner(uid) && kind in ['garments','essentials','outfits','wears','watches','searches','notifications','products','cart','savedPosts'];
+   }
+  }
+  match /profiles/{uid} {
+   allow read: if signedIn();
+   allow create, update: if owner(uid) && request.resource.data.id == uid && request.resource.data.keys().hasOnly(['id','displayName','username','photo','bio']) && request.resource.data.username.matches('^[a-z0-9_]{3,24}$') && (!('bio' in request.resource.data) || (request.resource.data.bio is string && request.resource.data.bio.size() <= 180));
+   allow delete: if owner(uid);
+  }
+  match /friendRequests/{rid} {
+   allow read: if signedIn() && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
+   allow create: if signedIn() && request.resource.data.fromId == request.auth.uid && request.resource.data.toId != request.auth.uid && request.resource.data.status == 'pending' && rid == pair(request.resource.data.fromId,request.resource.data.toId) && exists(/databases/$(database)/documents/profiles/$(request.resource.data.toId));
+   allow update: if signedIn() && request.resource.data.id == resource.data.id && request.resource.data.fromId == resource.data.fromId && request.resource.data.toId == resource.data.toId && ((resource.data.toId == request.auth.uid && resource.data.status == 'pending' && request.resource.data.status in ['accepted','rejected'] && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])) || (resource.data.fromId == request.auth.uid && resource.data.status != 'pending' && request.resource.data.status == 'pending'));
+   allow delete: if false;
+  }
+  match /friendships/{fid} {
+   allow read: if signedIn() && request.auth.uid in resource.data.members;
+   allow create: if signedIn() && request.resource.data.members.size() == 2 && request.auth.uid in request.resource.data.members && fid == pair(request.resource.data.members[0], request.resource.data.members[1]) && getAfter(/databases/$(database)/documents/friendRequests/$(fid)).data.status == 'accepted' && getAfter(/databases/$(database)/documents/friendRequests/$(fid)).data.toId == request.auth.uid && getAfter(/databases/$(database)/documents/friendRequests/$(fid)).data.fromId in request.resource.data.members;
+   allow update: if false;
+   allow delete: if signedIn() && request.auth.uid in resource.data.members;
+  }
+  match /sharedGarments/{gid} {
+   allow read: if signedIn() && (resource.data.ownerId == request.auth.uid || (request.auth.uid in resource.data.friendIds && friends(resource.data.ownerId,request.auth.uid)));
+   allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.piece.id == gid;
+   allow update: if signedIn() && resource.data.ownerId == request.auth.uid && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.piece.id == gid;
+   allow delete: if signedIn() && (!exists(/databases/$(database)/documents/sharedGarments/$(gid)) || resource.data.ownerId == request.auth.uid);
+  }
+  match /occasions/{oid} {
+   allow read: if signedIn() && request.auth.uid in resource.data.participantIds;
+   allow create: if signedIn() && request.resource.data.ownerId == request.auth.uid && request.resource.data.id == oid && request.auth.uid in request.resource.data.participantIds;
+   allow update: if member(oid) && request.resource.data.ownerId == resource.data.ownerId && request.resource.data.id == resource.data.id && ((resource.data.ownerId == request.auth.uid && request.auth.uid in request.resource.data.participantIds) || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['theme']) && request.resource.data.theme is string && request.resource.data.theme.size() <= 100) || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participants']) && request.resource.data.participants.size() == resource.data.participants.size() && request.resource.data.participants.removeAll([{'userId':request.auth.uid,'status':'accepted'}]) == resource.data.participants.removeAll([{'userId':request.auth.uid,'status':'invited'}])));
+   allow delete: if signedIn() && resource.data.ownerId == request.auth.uid;
+   match /submissions/{sid} {
+    allow read: if member(oid);
+    allow create, update: if member(oid) && sid == request.auth.uid && request.resource.data.ownerId == request.auth.uid && request.resource.data.id == sid && request.resource.data.keys().hasOnly(['id','ownerId','outfitName','pieces']);
+    allow delete: if member(oid) && sid == request.auth.uid;
+    match /votes/{uid} {
+     allow read: if member(oid);
+     allow create, update: if member(oid) && uid == request.auth.uid && request.resource.data.userId == uid && request.resource.data.keys().hasOnly(['userId']);
+     allow delete: if member(oid) && uid == request.auth.uid;
+    }
+    match /comments/{cid} {
+     allow read: if member(oid);
+     allow create: if member(oid) && request.resource.data.authorId == request.auth.uid && request.resource.data.id == cid && request.resource.data.text is string && request.resource.data.text.size() > 0 && request.resource.data.text.size() <= 180;
+     allow update: if false;
+     allow delete: if member(oid) && resource.data.authorId == request.auth.uid;
+    }
+   }
+  }
+  match /{document=**} { allow read, write: if false; }
+ }
+}

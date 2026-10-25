@@ -1,0 +1,63 @@
+{
+  "name": "projects/thread-hacktx-2026-rp/sites/thread-hacktx-2026-rp/customDomains/dripgram.tech",
+  "createTime": "2026-10-25T14:34:59.118486573Z",
+  "updateTime": "2026-10-25T14:34:59.118486666Z",
+  "etag": "W/\"1792938899\"",
+  "hostState": "HOST_ACTIVE",
+  "ownershipState": "OWNERSHIP_MISSING",
+  "requiredDnsUpdates": {
+    "desired": [
+      {
+        "domainName": "dripgram.tech",
+        "records": [
+          {
+            "domainName": "dripgram.tech",
+            "type": "A",
+            "rdata": "199.36.158.100",
+            "requiredAction": "ADD"
+          },
+          {
+            "domainName": "dripgram.tech",
+            "type": "TXT",
+            "rdata": "hosting-site=thread-hacktx-2026-rp",
+            "requiredAction": "ADD"
+          }
+        ]
+      }
+    ],
+    "checkTime": "2026-10-25T14:50:02.464190643Z"
+  },
+  "certPreference": "GROUPED",
+  "cert": {
+    "type": "TEMPORARY",
+    "state": "CERT_VALIDATING",
+    "verification": {
+      "dns": {
+        "discovered": [
+          {
+            "domainName": "_acme-challenge.dripgram.tech"
+          }
+        ],
+        "desired": [
+          {
+            "domainName": "_acme-challenge.dripgram.tech",
+            "records": [
+              {
+                "domainName": "_acme-challenge.dripgram.tech",
+                "type": "TXT",
+                "rdata": "xk0xqfLsPlOvCq7dJe0VU-ee0FAZCr0vC7wF_LAow7M",
+                "requiredAction": "ADD"
+              }
+            ]
+          }
+        ],
+        "checkTime": "2026-10-25T14:50:12.930756075Z"
+      },
+      "http": {
+        "path": "/.well-known/acme-challenge/biXGN6XfBrFP3-lvaspb2OGFogs4ANTkFHcNQTLhYZGNNIhtwFFTaR265z3PxnyY",
+        "desired": "biXGN6XfBrFP3-lvaspb2OGFogs4ANTkFHcNQTLhYZGNNIhtwFFTaR265z3PxnyY.M0-GObbb5ePi63ASQsPKBrDqfgayGnOWpyrEF0nHqug",
+        "lastCheckTime": "2026-10-25T14:50:12.930756075Z"
+      }
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-10-24T22:14:23.469Z",
+  "checks": [
+    "Live UI signup and Firestore profile",
+    "Fixture gallery, compression and real Meta recognition",
+    "Edited metadata saved and private thumbnail synced",
+    "Garment, session and retained thumbnail after reload",
+    "Authenticated private image retrieval",
+    "Cross-user private image rejected",
+    "Live grounded outfit saved from actual owned garments",
+    "Real Shopping listings in app",
+    "Live product comparison",
+    "No browser runtime errors"
+  ],
+  "cameraTested": false
+}

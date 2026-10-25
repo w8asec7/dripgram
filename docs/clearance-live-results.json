@@ -1,0 +1,9 @@
+{
+  "source": "real authenticated backend + SerpApi; one initial query and one cache replay",
+  "firstBatchMs": 495,
+  "cachedReplayMs": 175,
+  "verifiedDiscountProducts": 40,
+  "nextPage": 1,
+  "checkedAt": "2026-10-25T01:33:37.911Z",
+  "maxSearchRequests": 1
+}

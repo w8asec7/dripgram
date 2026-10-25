@@ -1,0 +1,74 @@
+{
+  "note": "Live observations with different provider/network-cache conditions, not a controlled provider speedup claim. No queries, tokens, personal images or account IDs retained.",
+  "observations": [
+    {
+      "stage": "baseline",
+      "label": "initial",
+      "ms": 1377,
+      "serverTiming": "wardrobe;dur=187.1, saved_context;dur=118.8, plan;dur=1.8, provider;dur=878.0, provider_calls;dur=1.0, search_wall;dur=898.3, merge;dur=0.6, retain;dur=4.6, total;dur=1215.3",
+      "products": 40,
+      "checkedAt": "2026-10-25T05:34:42.646Z"
+    },
+    {
+      "stage": "baseline",
+      "label": "repeat",
+      "ms": 174,
+      "serverTiming": "wardrobe;dur=83.4, saved_context;dur=76.4, plan;dur=0.7, search_wall;dur=0.5, merge;dur=0.1, retain;dur=4.0, total;dur=166.3",
+      "products": 40,
+      "checkedAt": "2026-10-25T05:34:42.646Z"
+    },
+    {
+      "stage": "baseline",
+      "label": "price-filter",
+      "ms": 277,
+      "serverTiming": "wardrobe;dur=132.7, saved_context;dur=81.2, plan;dur=1.1, provider;dur=39.9, provider_calls;dur=1.0, search_wall;dur=50.6, merge;dur=0.1, retain;dur=3.8, total;dur=270.5",
+      "products": 40,
+      "checkedAt": "2026-10-25T05:34:43.105Z"
+    },
+    {
+      "stage": "after",
+      "label": "initial",
+      "ms": 800,
+      "serverTiming": "context;dur=493.7, plan;dur=2.0, provider;dur=166.9, provider_calls;dur=1.0, search_wall;dur=186.7, merge;dur=0.5, retain;dur=4.3, total;dur=692.1",
+      "products": 40,
+      "checkedAt": "2026-10-25T05:35:27.588Z"
+    },
+    {
+      "stage": "after",
+      "label": "repeat",
+      "ms": 191,
+      "serverTiming": "context;dur=173.8, plan;dur=0.8, search_wall;dur=1.4, merge;dur=0.1, retain;dur=5.6, total;dur=183.4",
+      "products": 40,
+      "checkedAt": "2026-10-25T05:35:27.588Z"
+    },
+    {
+      "stage": "after",
+      "label": "price-filter",
+      "ms": 193,
+      "serverTiming": "context;dur=177.1, plan;dur=1.1, search_wall;dur=1.0, merge;dur=0.1, retain;dur=4.9, total;dur=185.4",
+      "products": 40,
+      "checkedAt": "2026-10-25T05:35:27.588Z"
+    },
+    {
+      "stage": "after",
+      "requiredGarmentId": "g1",
+      "grounded": true,
+      "source": "meta",
+      "ms": 1879
+    },
+    {
+      "stage": "after",
+      "requiredGarmentId": "g3",
+      "grounded": true,
+      "source": "meta",
+      "ms": 1937
+    },
+    {
+      "stage": "after",
+      "requiredGarmentId": "g13",
+      "grounded": true,
+      "source": "meta",
+      "ms": 1756
+    }
+  ]
+}

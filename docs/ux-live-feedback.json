@@ -1,0 +1,8 @@
+{
+  "authentication": "PASS",
+  "feedbackCreateReadChangeUndo": "PASS",
+  "unauthenticatedAccessDenied": "PASS",
+  "garmentUnchanged": "PASS",
+  "metaRequests": 0,
+  "serpRequests": 0
+}
